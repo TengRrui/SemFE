@@ -185,8 +185,8 @@ class MatchingNet(nn.Module):
         data['w1_c_4'] = feat_c1_4.size(3)
         data['w0_f_2'] = feat_f0_2.size(3)
         data['w1_f_2'] = feat_f1_2.size(3)
-        feat_c0_8 = rearrange(feat_c0_8, 'n c h w -> n (h w) c')
-        feat_c1_8 = rearrange(feat_c1_8, 'n c h w -> n (h w) c')
+        feat_c0_8 = rearrange(self.pos_encoding(feat_c0_8), 'n c h w -> n (h w) c')
+        feat_c1_8 = rearrange(self.pos_encoding(feat_c1_8), 'n c h w -> n (h w) c')
         feat_c0_8_01 = feat_c0_8
         feat_c1_8_01 = feat_c1_8
         feat_c0_8, feat_c1_8 = self.start_coarse(feat_c0_8, feat_c1_8)
@@ -210,34 +210,34 @@ class MatchingNet(nn.Module):
         feat_c0_8_2 = (feat_c0_8_2 + feat_c0_8_1)/2
         feat_c1_8_2 = (feat_c1_8_2 + feat_c1_8_1)/2
 
+        feat_c0_8_classk, classnum0 = self.class_assort(feat_c0_8_2)
+        feat_c1_8_classk, classnum1 = self.class_assort(feat_c1_8_2)
+
         feat_c0_8_3 = rearrange(feat_c0_8_2, 'n (h w) c -> n c h w', h=data['h0_c_8'], w=data['w0_c_8'])
         feat_c1_8_3 = rearrange(feat_c1_8_2, 'n (h w) c -> n c h w', h=data['h1_c_8'], w=data['w1_c_8'])
         feat_c0_8_4 = self.pos_encoding(feat_c0_8_3)
         feat_c1_8_4 = self.pos_encoding(feat_c1_8_3)
-        # feat_c0_8_classk, classnum0 = self.class_assort(feat_c0_8_4)
-        # feat_c1_8_classk, classnum1 = self.class_assort(feat_c1_8_4)
-        #
+
         feat_c0_8_5 = rearrange(feat_c0_8_4, 'n c h w -> n (h w) c')
         feat_c1_8_5 = rearrange(feat_c1_8_4, 'n c h w -> n (h w) c')
-        #
-        # feat_c0_8_b = self.class_transformer(classnum0, feat_c0_8_5, feat_c0_8_classk, mask_c0)
-        # feat_c1_8_b = self.class_transformer(classnum1, feat_c1_8_5, feat_c1_8_classk, mask_c1)
-        #
-        # feat_c0 = (feat_c0_8_b + feat_c0_8_5) / 2
-        # feat_c1 = (feat_c1_8_b + feat_c1_8_5) / 2
-        #
-        # feat_c_8_token_1, feat_c0_8_a = self.class_inter(feat_c0_8_classk, feat_c0)
-        # feat_c_8_token_2, feat_c1_8_a = self.class_inter(feat_c1_8_classk, feat_c1)
-        # feat_c0_, feat_c1_ = self.interactive(feat_c0_8_a, feat_c1_8_a)
-        #
-        # feat_c0_8_final = feat_c0_ * 0.75 + feat_c0_8_a * 0.25
-        # feat_c1_8_final = feat_c1_ * 0.75 + feat_c1_8_a * 0.25
-        # 1x1600x256, 1x256x160x160
+
+        feat_c0_8_b = self.class_transformer(classnum0, feat_c0_8_5, feat_c0_8_classk, mask_c0)
+        feat_c1_8_b = self.class_transformer(classnum1, feat_c1_8_5, feat_c1_8_classk, mask_c1)
+
+        feat_c0 = (feat_c0_8_b + feat_c0_8_5) / 2
+        feat_c1 = (feat_c1_8_b + feat_c1_8_5) / 2
+
+        feat_c_8_token_1, feat_c0_8_a = self.class_inter(feat_c0_8_classk, feat_c0)
+        feat_c_8_token_2, feat_c1_8_a = self.class_inter(feat_c1_8_classk, feat_c1)
+        feat_c0_, feat_c1_ = self.interactive(feat_c0_8_a, feat_c1_8_a)
+
+        feat_c0_8_final = feat_c0_ * 0.75 + feat_c0_8_a * 0.25
+        feat_c1_8_final = feat_c1_ * 0.75 + feat_c1_8_a * 0.25
+
         # mdesc0, mdesc1, fine_featmap0, fine_featmap1 = self.backbone.forward_pair_lo(samples0, samples1)
-        # mdesc0 = feat_c0_8_final
-        # mdesc1 = feat_c1_8_final
-        mdesc0 = feat_c0_8_5
-        mdesc1 = feat_c1_8_5
+        mdesc0 = feat_c0_8_final
+        mdesc1 = feat_c1_8_final
+
         cm_matrix = self.compute_confidence_matrix(mdesc0, mdesc1)
         fine_featmap0 = feat_f0_2
         fine_featmap1 = feat_f1_2
