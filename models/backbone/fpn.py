@@ -5,7 +5,7 @@ import torch
 from einops.einops import rearrange
 import copy
 from models.loftr_module.linear_attention import LinearAttention, FullAttention
-
+from models.position import PositionEmbedding2D, PositionEmbedding1D
 def conv1x1(in_planes, out_planes, stride=1):
     """1x1 convolution without padding"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, padding=0, bias=False)
@@ -170,6 +170,7 @@ class FPN(nn.Module):
         self.conv1 = nn.Conv2d(3, initial_dim, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(initial_dim)
         self.relu = nn.ReLU(inplace=True)
+        self.position1d = PositionEmbedding1D(392)
         self.stage1 = self._make_blocks(block, initial_dim, block_dims[0], stride=1)  # 1/2
         self.stage2 = self._make_blocks(block, block_dims[0], block_dims[1], stride=2)  # 1/4
         self.stage3 = self._make_blocks(block, block_dims[1], block_dims[2], stride=2)  # 1/8
@@ -226,6 +227,8 @@ class FPN(nn.Module):
         x4_out = self.layer4_outconv(x4) # 1/16
         data = []
         data = {'h0_c_16': x4_out.size(2), 'w0_c_16': x4_out.size(3)}
+        local_position = self.position1d(x4_out)
+        x4_out = x4_out + local_position
         x4_out = rearrange(x4_out, 'n c h w -> n (h w) c', h=data['h0_c_16'], w=data['w0_c_16'])
         x4_out = self.attention(x4_out)
         x4_out = rearrange(x4_out, 'n (h w) c -> n c h w', h=data['h0_c_16'], w=data['w0_c_16'])
