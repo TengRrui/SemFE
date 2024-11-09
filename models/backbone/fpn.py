@@ -227,8 +227,8 @@ class FPN(nn.Module):
         data = []
         data = {'h0_c_16': x4_out.size(2), 'w0_c_16': x4_out.size(3)}
         x4_out = rearrange(x4_out, 'n c h w -> n (h w) c', h=data['h0_c_16'], w=data['w0_c_16'])
-        local_position = self.position1d(x4_out)
-        x4_out = x4_out + local_position
+        # local_position = self.position1d(x4_out)
+        # x4_out = x4_out + local_position
         x4_out = self.attention(x4_out)
         x4_out = rearrange(x4_out, 'n (h w) c -> n c h w', h=data['h0_c_16'], w=data['w0_c_16'])
 
